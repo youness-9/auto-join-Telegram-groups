@@ -1,0 +1,4 @@
+telethon
+requests
+Pillow
+colorama
