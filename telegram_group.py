@@ -5,73 +5,43 @@ from PIL import Image
 from colorama import Fore
 
 print('''
-     ___   .___________.  ______   .___  ___.  __    ______ 
-    /   \  |           | /  __  \  |   \/   | |  |  /      |
-   /  ^  \ `---|  |----`|  |  |  | |  \  /  | |  | |  ,----'
-  /  /_\  \    |  |     |  |  |  | |  |\/|  | |  | |  |     
- /  _____  \   |  |     |  `--'  | |  |  |  | |  | |  `----.
-/__/     \__\  |__|      \______/  |__|  |__| |__|  \______|
-                                                            
 
+
+ ░▒▓██████▓▒░░▒▓███████▓▒░ ░▒▓██████▓▒░░▒▓███████▓▒░░▒▓████████▓▒░ 
+░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░        
+░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░        
+░▒▓████████▓▒░▒▓███████▓▒░░▒▓████████▓▒░▒▓███████▓▒░░▒▓██████▓▒░   
+░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░        
+░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░        
+░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓█▓▒░░▒▓█▓▒░▒▓███████▓▒░░▒▓████████▓▒░ 
+                                                                   
+                                                                   
+                                                      
 ''')
 
 ascii_chars = '@%#*+=-:. '
+def send_file_to_group(client):
+    send_links = input("\nDo you want to send these links to a group to share them for benefit? (yes/no): ").strip().lower()
+    if send_links == 'yes':
+        group_username = 'arabebug'  # Username of the group (https://t.me/arabebug)
+        file_path = 'your_telegram_link.txt'
+
+        try:
+            client.send_file(group_username, file_path, caption="Here are the extracted group links 📎")
+            print(Fore.GREEN + "File was successfully sent to the group.")
+        except Exception as e:
+            print(Fore.RED + "Failed to send the file to the group:", str(e))
 
 
-def image_to_ascii(image_path, width):
-    image = Image.open(image_path)
-    aspect_ratio = image.width / float(image.height)
-    height = int(width / aspect_ratio / 2)
-    resized_image = image.resize((width, height))
-    resized_image = resized_image.convert('L')
-    ascii_image = ''
-
-    for y in range(resized_image.height):
-        line = ''
-        for x in range(resized_image.width):
-            pixel_value = resized_image.getpixel((x, y))
-            ascii_index = int(pixel_value / 256 * len(ascii_chars))
-            line += ascii_chars[ascii_index]
-
-        line = ' ' * 10 + line
-
-        ascii_image += line + '\n'
-
-    return ascii_image
-
-
-image_url = "https://source.unsplash.com/random/900%C3%97700/?face"
-try:
-    response = requests.get(image_url)
-    if response.status_code == 200:
-        image_path = "image/2.jpg"
-        with open(image_path, "wb") as f:
-            f.write(response.content)
-    else:
-        image_path = "image/1.jpg"
-except requests.exceptions.RequestException:
-    image_path = "image/1.jpg"
-
-width = 50
-
-ascii_image = image_to_ascii(image_path, width)
-
-ascii_lines = ascii_image.strip().split('\n')
-
-red_link = Fore.GREEN + "https://t.me/atomic_9" + Fore.RESET
-combined_lines = [line + ' ' * (50 - len(line)) + ' my group telegram: ' + red_link for line in ascii_lines]
-
-for line in combined_lines:
-    print(line)
 
 with open("token.txt", "r") as file:
     lines = file.readlines()
     api_id = lines[0].strip().split('=')[1].strip()
     api_hash = lines[1].strip().split('=')[1].strip()
 
-print("\n\n" + Fore.RED + "1. Join a group (put 1)")
-print("2. Get group links (put 2)")
-choice = input("\n#Enter the corresponding number for the action you want to take (1 or 2): " + Fore.RESET)
+print("\n\n" + "1. Join a group (Type 1)")
+print("2. Extract group links (Type 2)")
+choice = input("\n#Enter the number(1 or 2): ")
 if choice == '1':
     file_name = input("Please enter the name of the file that contains the group links: ")
 
@@ -113,3 +83,24 @@ elif choice == '2':
             aotofile.write(link + '\n')
 else:
     print("Invalid choice!")
+    
+with TelegramClient('session_name', api_id, api_hash) as client:
+    group_links = []
+    for dialog in client.iter_dialogs():
+        entity = dialog.entity
+        if isinstance(entity, (types.Channel, types.Chat)):
+            if hasattr(entity, 'username') and entity.username:
+                invite_link = f"https://t.me/{entity.username}"
+            else:
+                invite_link = f"https://t.me/joinchat/{entity.id}"
+            group_links.append(invite_link)
+
+    for link in group_links:
+        print(link)
+
+    with open('your_telegram_link.txt', 'w', encoding='utf-8') as aotofile:
+        for link in group_links:
+            aotofile.write(link + '\n')
+
+    # 📤 Call the new function to send file from user account
+    send_file_to_group(client)
